@@ -6,11 +6,11 @@ import java.util.List;
 
 public interface BotCommands {
     List<BotCommand> LIST_OF_COMMANDS = List.of(
-            new BotCommand("/start", "start bot"),
-            new BotCommand("/help", "bot info")
+            new BotCommand("/start", "запустить бота"),
+            new BotCommand("/help", "помогите")
     );
 
-    String HELP_TEXT = "This following commands are available to you:\n\n" +
-            "/start - start the bot\n" +
-            "/help - help menu";
+    String HELP_TEXT = "Доступные функции:\n\n" +
+            "/start - запустить бота\n" +
+            "/help - помогите";
 }

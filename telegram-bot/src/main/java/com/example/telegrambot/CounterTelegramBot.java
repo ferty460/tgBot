@@ -3,8 +3,11 @@ package com.example.telegrambot;
 import com.example.telegrambot.components.BotCommands;
 import com.example.telegrambot.components.Buttons;
 import com.example.telegrambot.config.BotConfig;
+import com.example.telegrambot.response.BookListResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -44,33 +47,34 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
 
     @Override
     public void onUpdateReceived(@NotNull Update update) {
-        long chatId = 0;
-        long userId = 0; //это нам понадобится позже
-        String userName = null;
-        String receivedMessage;
+        if (update.hasMessage() && update.getMessage().hasText()) {
+            String messageText = update.getMessage().getText();
+            long chatId = update.getMessage().getChatId();
+            String memberName = update.getMessage().getFrom().getFirstName();
 
-
-        //если получено сообщение текстом
-        if(update.hasMessage()) {
-            chatId = update.getMessage().getChatId();
-            userId = update.getMessage().getFrom().getId();
-            userName = update.getMessage().getFrom().getFirstName();
-            if (update.getMessage().hasText()) {
-                receivedMessage = update.getMessage().getText();
-                botAnswerUtils(receivedMessage, chatId, userName);
+            switch (messageText) {
+                case "/start" -> startBot(chatId, memberName);
+                case "/all" -> getAllBook(chatId);
+                default -> log.info("Unexpected message");
             }
-
-
-            //если нажата одна из кнопок бота
-        } else if (update.hasCallbackQuery()) {
-            chatId = update.getCallbackQuery().getMessage().getChatId();
-            userId = update.getCallbackQuery().getFrom().getId();
-            userName = update.getCallbackQuery().getFrom().getFirstName();
-            receivedMessage = update.getCallbackQuery().getData();
-            botAnswerUtils(receivedMessage, chatId, userName);
         }
     }
 
+    private void getAllBook(long chatId) {
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId);
+        ResponseEntity<BookListResponse> responseEntity = new RestTemplate().
+                getForEntity("http://localhost:2825/api/v1/book/all", BookListResponse.class);
+        System.out.println(responseEntity.getBody().getData());
+        message.setText(responseEntity.getBody().getData().toString());
+
+        try {
+            execute(message);
+            log.info("Reply sent");
+        } catch (TelegramApiException e) {
+            log.error(e.getMessage());
+        }
+    }
 
     private void botAnswerUtils(String receivedMessage, long chatId, String userName) {
         switch (receivedMessage){
@@ -88,7 +92,7 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
     private void startBot(long chatId, String userName) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText("Hi, " + userName + "! I'm a Telegram bot.'");
+        message.setText("Салам, " + userName + "! Я тг бот, я ничего не умею.");
         message.setReplyMarkup(Buttons.inlineMarkup());
 
 
