@@ -13,4 +13,9 @@ public class BookListResponse extends BaseResponse {
     }
 
     private Iterable<BookEntity> data;
+
+    @Override
+    public String toString() {
+        return "Книги из библиотеки:\n" + data;
+    }
 }

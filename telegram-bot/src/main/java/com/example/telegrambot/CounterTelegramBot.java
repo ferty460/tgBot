@@ -66,7 +66,7 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
         ResponseEntity<BookListResponse> responseEntity = new RestTemplate().
                 getForEntity("http://localhost:2825/api/v1/book/all", BookListResponse.class);
         System.out.println(responseEntity.getBody().getData());
-        message.setText(responseEntity.getBody().getData().toString());
+        message.setText(responseEntity.getBody().getData().toString().replaceAll("^\\[|\\]$", ""));
 
         try {
             execute(message);
