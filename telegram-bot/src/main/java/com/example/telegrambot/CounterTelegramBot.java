@@ -3,6 +3,7 @@ package com.example.telegrambot;
 import com.example.telegrambot.components.BotCommands;
 import com.example.telegrambot.components.Buttons;
 import com.example.telegrambot.config.BotConfig;
+import com.example.telegrambot.entity.BookEntity;
 import com.example.telegrambot.response.BookListResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScope
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 
 @Slf4j
 @Component
@@ -47,6 +49,7 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
 
     @Override
     public void onUpdateReceived(@NotNull Update update) {
+        ArrayList<BookEntity> books = new ArrayList<>();
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             long chatId = update.getMessage().getChatId();
@@ -55,8 +58,36 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
             switch (messageText) {
                 case "/start" -> startBot(chatId, memberName);
                 case "/all" -> getAllBook(chatId);
+                case "/help" -> sendHelpText(chatId, HELP_TEXT);
+                case "/search" -> searchBook(chatId, update, books);
                 default -> log.info("Unexpected message");
             }
+        }
+    }
+
+    private void searchBook(long chatId, @NotNull Update update, ArrayList<BookEntity> books) {
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId);
+        message.setText("Введите значение:\n");
+
+        String messageText = update.getMessage().getText();
+        ResponseEntity<BookListResponse> responseEntity = new RestTemplate().
+                getForEntity("http://localhost:2825/api/v1/book/all", BookListResponse.class);
+        System.out.println(responseEntity.getBody().getData().toString());
+        for (BookEntity elem : books) {
+            if (messageText.equals(elem.getAuthor().getName()) ||
+                    messageText.equals(elem.getAuthor().getSurname()) ||
+                    messageText.equals(elem.getPublisher().getPublisher()) ||
+                    messageText.equals(elem.getTitle()) ||
+                    messageText.equals(elem.getKind())) {
+                System.out.println("sa");
+            }
+        }
+        try {
+            execute(message);
+            log.info("Reply sent");
+        } catch (TelegramApiException e) {
+            log.error(e.getMessage());
         }
     }
 
@@ -75,19 +106,6 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
             log.error(e.getMessage());
         }
     }
-
-    private void botAnswerUtils(String receivedMessage, long chatId, String userName) {
-        switch (receivedMessage){
-            case "/start":
-                startBot(chatId, userName);
-                break;
-            case "/help":
-                sendHelpText(chatId, HELP_TEXT);
-                break;
-            default: break;
-        }
-    }
-
 
     private void startBot(long chatId, String userName) {
         SendMessage message = new SendMessage();
