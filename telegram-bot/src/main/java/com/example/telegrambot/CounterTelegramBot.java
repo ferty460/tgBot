@@ -49,40 +49,28 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
 
     @Override
     public void onUpdateReceived(@NotNull Update update) {
-        ArrayList<BookEntity> books = new ArrayList<>();
         if (update.hasMessage() && update.getMessage().hasText()) {
-            String messageText = update.getMessage().getText();
             long chatId = update.getMessage().getChatId();
+            String messageText = update.getMessage().getText();
             String memberName = update.getMessage().getFrom().getFirstName();
+            String[] param = messageText.split(" ");
 
-            switch (messageText) {
+            switch (param[0]) {
                 case "/start" -> startBot(chatId, memberName);
                 case "/all" -> getAllBook(chatId);
                 case "/help" -> sendHelpText(chatId, HELP_TEXT);
-                case "/search" -> searchBook(chatId, update, books);
+                case "/search" -> searchBook(chatId, param[1]);
                 default -> log.info("Unexpected message");
             }
         }
     }
 
-    private void searchBook(long chatId, @NotNull Update update, ArrayList<BookEntity> books) {
+    public void searchBook(long chatId, String title) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText("Введите значение:\n");
-
-        String messageText = update.getMessage().getText();
         ResponseEntity<BookListResponse> responseEntity = new RestTemplate().
-                getForEntity("http://localhost:2825/api/v1/book/all", BookListResponse.class);
-        System.out.println(responseEntity.getBody().getData().toString());
-        for (BookEntity elem : books) {
-            if (messageText.equals(elem.getAuthor().getName()) ||
-                    messageText.equals(elem.getAuthor().getSurname()) ||
-                    messageText.equals(elem.getPublisher().getPublisher()) ||
-                    messageText.equals(elem.getTitle()) ||
-                    messageText.equals(elem.getKind())) {
-                System.out.println("sa");
-            }
-        }
+                getForEntity("http://localhost:2825/api/v1/book?title=" + title, BookListResponse.class);
+        message.setText(responseEntity.getBody().getData().toString().replaceAll("^\\[|\\]$", ""));
         try {
             execute(message);
             log.info("Reply sent");
@@ -90,6 +78,7 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
             log.error(e.getMessage());
         }
     }
+
 
     private void getAllBook(long chatId) {
         SendMessage message = new SendMessage();

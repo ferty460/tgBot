@@ -13,10 +13,10 @@ public class BookEntity {
 
     @Override
     public String toString() {
-        return "Название: " + title + '\n' +
+        return "\n\nНазвание: " + title + '\n' +
                 "Автор: " + author + '\n' +
                 "Издательство: " + publisher + '\n' +
                 "Год издания: " + year + '\n' +
-                "Жанр: " + kind + '\n' + '\n';
+                "Жанр: " + kind;
     }
 }

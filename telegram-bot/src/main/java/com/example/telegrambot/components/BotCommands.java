@@ -8,13 +8,13 @@ public interface BotCommands {
     List<BotCommand> LIST_OF_COMMANDS = List.of(
             new BotCommand("/start", "запустить бота"),
             new BotCommand("/help", "помогите"),
-            new BotCommand("/search", "найти книгу"),
+            new BotCommand("/search", "поиск по названию"),
             new BotCommand("/all", "вывод книг")
     );
 
     String HELP_TEXT = "Доступные функции:\n\n" +
             "/start - запустить бота\n" +
             "/help - помогите\n" +
-            "/search - найти книгу\n" +
+            "/search - поиск по названию\n" +
             "/all - вывод книг";
 }
