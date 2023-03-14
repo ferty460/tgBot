@@ -23,7 +23,7 @@ import java.util.ArrayList;
 @Component
 public class CounterTelegramBot extends TelegramLongPollingBot implements BotCommands {
     final BotConfig config;
-
+    public static ArrayList<BookEntity> booksData = new ArrayList<>();
 
     public CounterTelegramBot(BotConfig config) {
         this.config = config;
@@ -60,6 +60,7 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
                 case "/all" -> getAllBook(chatId);
                 case "/help" -> sendHelpText(chatId, HELP_TEXT);
                 case "/search" -> searchBook(chatId, param[1]);
+                case "/delete" -> deleteBook(chatId, param[1]);
                 default -> log.info("Unexpected message");
             }
         }
@@ -79,6 +80,23 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
         }
     }
 
+    public void deleteBook(long chatId, String id) {
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId);
+        System.out.println(booksData.size());
+        if (Integer.parseInt(id) <= booksData.size() - 1 || !booksData.isEmpty()) {
+            booksData.remove(Integer.parseInt(id));
+            message.setText("Книга удалена");
+        } else {
+            message.setText("Такой книги нет");
+        }
+        try {
+            execute(message);
+            log.info("Reply sent");
+        } catch (TelegramApiException e) {
+            log.error(e.getMessage());
+        }
+    }
 
     private void getAllBook(long chatId) {
         SendMessage message = new SendMessage();
