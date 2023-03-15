@@ -23,7 +23,6 @@ import java.util.ArrayList;
 @Component
 public class CounterTelegramBot extends TelegramLongPollingBot implements BotCommands {
     final BotConfig config;
-    public static ArrayList<BookEntity> booksData = new ArrayList<>();
 
     public CounterTelegramBot(BotConfig config) {
         this.config = config;
@@ -34,35 +33,46 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
         }
     }
 
-
     @Override
     public String getBotUsername() {
         return config.getBotName();
     }
-
 
     @Override
     public String getBotToken() {
         return config.getToken();
     }
 
-
     @Override
     public void onUpdateReceived(@NotNull Update update) {
+        long chatId;
+        String messageText;
+        String memberName;
         if (update.hasMessage() && update.getMessage().hasText()) {
-            long chatId = update.getMessage().getChatId();
-            String messageText = update.getMessage().getText();
-            String memberName = update.getMessage().getFrom().getFirstName();
+            chatId = update.getMessage().getChatId();
+            messageText = update.getMessage().getText();
+            memberName = update.getMessage().getFrom().getFirstName();
             String[] param = messageText.split(" ");
-
             switch (param[0]) {
                 case "/start" -> startBot(chatId, memberName);
                 case "/all" -> getAllBook(chatId);
                 case "/help" -> sendHelpText(chatId, HELP_TEXT);
                 case "/search" -> searchBook(chatId, param[1]);
-                case "/delete" -> deleteBook(chatId, param[1]);
                 default -> log.info("Unexpected message");
             }
+        } else if (update.hasCallbackQuery()) {
+            chatId = update.getCallbackQuery().getMessage().getChatId();
+            memberName = update.getCallbackQuery().getFrom().getFirstName();
+            messageText = update.getCallbackQuery().getData();
+            botAnswerUtils(messageText, chatId, memberName);
+        }
+    }
+
+    private void botAnswerUtils(String receivedMessage, long chatId, String userName) {
+        switch (receivedMessage) {
+            case "/start" -> startBot(chatId, userName);
+            case "/help" -> sendHelpText(chatId, HELP_TEXT);
+            case "/all" -> getAllBook(chatId);
         }
     }
 
@@ -72,28 +82,13 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
         ResponseEntity<BookListResponse> responseEntity = new RestTemplate().
                 getForEntity("http://localhost:2825/api/v1/book?title=" + title, BookListResponse.class);
         message.setText(responseEntity.getBody().getData().toString().replaceAll("^\\[|\\]$", ""));
-        try {
-            execute(message);
-            log.info("Reply sent");
-        } catch (TelegramApiException e) {
-            log.error(e.getMessage());
-        }
-    }
-
-    public void deleteBook(long chatId, String id) {
-        SendMessage message = new SendMessage();
-        message.setChatId(chatId);
-        System.out.println(booksData.size());
-        if (Integer.parseInt(id) <= booksData.size() - 1 || !booksData.isEmpty()) {
-            booksData.remove(Integer.parseInt(id));
-            message.setText("Книга удалена");
-        } else {
+        if (message.getText().isEmpty()) {
             message.setText("Такой книги нет");
         }
         try {
             execute(message);
             log.info("Reply sent");
-        } catch (TelegramApiException e) {
+        } catch (TelegramApiException | ArrayIndexOutOfBoundsException e) {
             log.error(e.getMessage());
         }
     }
@@ -117,9 +112,8 @@ public class CounterTelegramBot extends TelegramLongPollingBot implements BotCom
     private void startBot(long chatId, String userName) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText("Салам, " + userName + "! Я тг бот, я ничего не умею.");
+        message.setText("Привет, " + userName + "! Я тг бот, я ничего не умею.");
         message.setReplyMarkup(Buttons.inlineMarkup());
-
 
         try {
             execute(message);
